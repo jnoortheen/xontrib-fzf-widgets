@@ -8,6 +8,7 @@ setup(
     author='David Strobach',
     author_email='lalochcz@gmail.com',
     description="fzf widgets for xonsh",
+    install_requires=['xonsh>=0.10'],
     packages=['xontrib'],
     package_dir={'xontrib': 'xontrib'},
     package_data={'xontrib': ['*.xsh']},
