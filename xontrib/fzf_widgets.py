@@ -28,10 +28,7 @@ def get_fzf_binary_path():
     return path
 
 
-def fzf_insert_history(event):
-    # Run fzf, feeding it the xonsh history
-    # fzf prints the user's choice on stdout.
-
+def get_fzf_proc(event):
     # universal_newlines=True is used because `history_main` writes str()s
     # That also means that we don't have to `decode()` the stdout.read()` below.
     popen_args = [
@@ -46,13 +43,15 @@ def fzf_insert_history(event):
     ]
     if len(event.current_buffer.text) > 0:
         popen_args.append(f"-q ^{event.current_buffer.text}")
-    proc = subprocess.Popen(
+    return subprocess.Popen(
         popen_args,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         universal_newlines=True,
     )
-    history_main(args=["show", "-0", "all"], stdout=proc.stdin)
+
+
+def close_fzf_proc(proc, event):
     proc.stdin.close()
     proc.wait()
     choice = proc.stdout.read().strip()
@@ -63,6 +62,31 @@ def fzf_insert_history(event):
     if choice:
         event.current_buffer.text = choice
         event.current_buffer.cursor_position = len(choice)
+
+
+def fzf_insert_history(event):
+    # Run fzf, feeding it the xonsh history
+    # fzf prints the user's choice on stdout.
+
+    proc = get_fzf_proc(event)
+    history_main(args=["show", "-0", "all"], stdout=proc.stdin)
+    close_fzf_proc(proc, event)
+
+
+def fzf_insert_dir_history(event):
+    # Run fzf, feeding it the xonsh history
+    # fzf prints the user's choice on stdout.
+    hist = XSH.history
+    if hist is None:
+        return
+    proc = get_fzf_proc(event)
+    read = set()
+    for entry in hist.all_items():
+        cwd = entry.get("cwd")
+        if cwd and (cwd not in read):
+            read.add(cwd)
+            proc.stdin.write(str(cwd) + "\0")
+    close_fzf_proc(proc, event)
 
 
 def fzf_insert_file(event, dirs_only=False):
@@ -166,3 +190,7 @@ def custom_keybindings(bindings, **kw):
     @handler("fzf_dir_binding")
     def fzf_dir(event):
         fzf_insert_file(event, True)
+
+    @handler("fzf_dir_history_binding")
+    def fzf_dir_history(event):
+        fzf_insert_dir_history(event)
