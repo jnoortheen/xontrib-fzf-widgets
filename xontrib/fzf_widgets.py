@@ -1,7 +1,6 @@
 import os
 import re
 import subprocess
-from xonsh.history.main import history_main
 from xonsh.completers.path import complete_path
 from xonsh.built_ins import XSH, subproc_captured_stdout
 
@@ -47,7 +46,7 @@ def get_fzf_proc(event):
         popen_args,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        universal_newlines=True,
+        text=True,
     )
 
 
@@ -69,7 +68,7 @@ def fzf_insert_history(event):
     # fzf prints the user's choice on stdout.
 
     proc = get_fzf_proc(event)
-    history_main(args=["show", "-0", "all"], stdout=proc.stdin)
+    XSH.aliases["history"](args=["show", "-0", "all"], stdout=proc.stdin)
     close_fzf_proc(proc, event)
 
 
